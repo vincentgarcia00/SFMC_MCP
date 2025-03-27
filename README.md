@@ -37,7 +37,6 @@ You'll need to configure the tool with your SFMC credentials. The tool expects t
 - `SFMC_AUTH_BASE_URI`: The authentication base URI (e.g., `https://auth.example.salesforce.com`)
 - `SFMC_REST_BASE_URI`: The REST API base URI (e.g., `https://rest.example.salesforce.com`)
 - `SFMC_ACCOUNT_ID`: (Optional) Your SFMC account ID
-- `HTTP_PROXY` or `HTTPS_PROXY`: (Optional) Proxy server URL if required
 
 ### Corporate Network Certificate Configuration
 
