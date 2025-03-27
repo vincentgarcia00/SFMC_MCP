@@ -41,21 +41,9 @@ You'll need to configure the tool with your SFMC credentials. The tool expects t
 
 ### Corporate Network Certificate Configuration
 
-If you're working in a corporate environment with SSL inspection, you may need to add your company's root certificate to Node.js. Here's how:
+If you're working in a corporate environment with SSL inspection, ensure that your company's root certificate is added to Node.js's trusted certificates store. In most enterprise environments, this is handled through your IT department's system configuration.
 
-1. Obtain your corporate root certificate (usually a `.pem` or `.crt` file)
-2. Set the `NODE_EXTRA_CA_CERTS` environment variable to point to your certificate file:
-
-   ```bash
-   export NODE_EXTRA_CA_CERTS=/path/to/your/certificate.pem
-   ```
-
-   Or for Windows:
-   ```cmd
-   set NODE_EXTRA_CA_CERTS=C:\path\to\your\certificate.pem
-   ```
-
-3. Alternatively, add it to your user profile or system environment variables permanently.
+If you need to add the certificate manually, you can refer to Node.js documentation on how to add custom certificates to the system's certificate store.
 
 ## Claude Desktop Configuration
 
@@ -73,8 +61,7 @@ To use this tool with Claude Desktop, you need to add it to your Claude Desktop 
     "SFMC_CLIENT_SECRET": "your_client_secret",
     "SFMC_AUTH_BASE_URI": "https://auth.example.salesforce.com",
     "SFMC_REST_BASE_URI": "https://rest.example.salesforce.com",
-    "SFMC_ACCOUNT_ID": "your_account_id_if_needed",
-    "NODE_EXTRA_CA_CERTS": "/path/to/your/certificate.pem"
+    "SFMC_ACCOUNT_ID": "your_account_id_if_needed"
   }
 }
 ```
@@ -146,10 +133,9 @@ Claude will use the tool to make a request like:
 
 If you're experiencing SSL certificate errors, try the following:
 
-1. Verify that your corporate root certificate is correctly installed
-2. Make sure `NODE_EXTRA_CA_CERTS` is pointing to the correct certificate file
-3. Check the console output for specific SSL error messages
-4. Ensure your network allows connections to the SFMC endpoints
+1. Verify that your corporate root certificate is correctly installed in the system certificate store
+2. Check the console output for specific SSL error messages
+3. Ensure your network allows connections to the SFMC endpoints
 
 ### Authentication Issues
 
