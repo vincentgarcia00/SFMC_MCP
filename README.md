@@ -1,6 +1,6 @@
 # SFMC MCP Tool
 
-A Model Context Protocol (MCP) tool for connecting Claude to Salesforce Marketing Cloud (SFMC) REST API. This tool enables Claude to interact with SFMC data and operations directly through the `sfmc_rest_request` tool function.
+A Model Context Protocol (MCP) tool for connecting Claude or any MCP compatible app to Salesforce Marketing Cloud (SFMC) REST API. This tool enables Claude to interact with SFMC data and operations directly through the `sfmc_rest_request` tool function.
 
 ## Features
 
