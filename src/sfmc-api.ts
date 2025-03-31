@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import https from 'https';
+import fs from 'fs';
 
 export interface SFMCConfig {
   clientId: string;
@@ -34,9 +35,9 @@ export class SFMCAPIService {
     // Create an HTTPS agent that uses the system's certificate store
     this.httpsAgent = new https.Agent({
       rejectUnauthorized: true, // Enforce SSL verification
-      // The following ensures Node.js uses the system certificate store
-      // rather than its bundled CA certificates
-    });
+    // Load custom certificate
+    ca: process.env.NODE_EXTRA_CA_CERTS ? [require('fs').readFileSync(process.env.NODE_EXTRA_CA_CERTS)] : undefined
+  });
 
     this.axiosInstance = axios.create({
       headers: {
