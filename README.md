@@ -57,7 +57,18 @@ You'll need to configure the tool with your SFMC credentials. The tool expects t
 
 If you're working in a corporate environment with SSL inspection, ensure that your company's root certificate is added to Node.js's trusted certificates store. In most enterprise environments, this is handled through your IT department's system configuration.
 
-If you need to add the certificate manually, you can refer to Node.js documentation on how to add custom certificates to the system's certificate store.
+If you need to add the certificate manually:
+
+Set the `NODE_EXTRA_CA_CERTS` environment variable to the path of your certificate file:
+
+   ```bash
+   # Linux/Mac
+   export NODE_EXTRA_CA_CERTS=/path/to/certificates.pem
+   
+   # Windows (PowerShell)
+   $env:NODE_EXTRA_CA_CERTS="C:\path\to\certificates.pem"
+   ```
+
 
 ## Claude Desktop Configuration
 
