@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { SFMCAPIService, SFMCConfig } from "./sfmc-api.js";
+import { SFMCAPIService } from "./sfmc-api.js";
 
 // Set NODE_TLS_REJECT_UNAUTHORIZED only in development if needed
 // If you're in a corporate environment with special certificates, you may need this
@@ -21,14 +21,18 @@ const server = new McpServer({
 });
 
 // Get SFMC credentials from environment variables (passed from Claude Desktop config)
-const sfmcConfig: SFMCConfig = {
+const sfmcConfig = {
     clientId: process.env.SFMC_CLIENT_ID || "",
     clientSecret: process.env.SFMC_CLIENT_SECRET || "",
     authBaseUri: process.env.SFMC_AUTH_BASE_URI || "",
     restBaseUri: process.env.SFMC_REST_BASE_URI || "",
     accountId: process.env.SFMC_ACCOUNT_ID,
     // Add proxy settings if needed
-    proxy: process.env.HTTP_PROXY || process.env.HTTPS_PROXY || null
+    proxy: process.env.HTTP_PROXY || process.env.HTTPS_PROXY || undefined,
+    // Add SSL verification option - if needed in development
+    rejectUnauthorized: process.env.NODE_ENV === 'development' && process.env.ALLOW_INSECURE_TLS === 'true' 
+        ? false 
+        : undefined
 };
 
 // Initialize SFMC client
