@@ -19,8 +19,6 @@ const sfmcConfig: SFMCConfig = {
   authBaseUri: process.env.SFMC_AUTH_BASE_URI || "",
   restBaseUri: process.env.SFMC_REST_BASE_URI || "",
   accountId: process.env.SFMC_ACCOUNT_ID,
-  // Add proxy settings if needed
-  proxy: process.env.HTTP_PROXY || process.env.HTTPS_PROXY || null
 };
 
 // Initialize SFMC client
@@ -31,11 +29,6 @@ if (!sfmcConfig.clientId || !sfmcConfig.clientSecret || !sfmcConfig.authBaseUri 
   console.error("ERROR: Missing required SFMC credentials in environment variables.");
   console.error("Make sure to set SFMC_CLIENT_ID, SFMC_CLIENT_SECRET, SFMC_AUTH_BASE_URI, and SFMC_REST_BASE_URI in Claude Desktop config.");
   process.exit(1);
-}
-
-// Log proxy information if available
-if (sfmcConfig.proxy) {
-  console.error(`Using proxy: ${sfmcConfig.proxy}`);
 }
 
 // General REST API Request Tool - A generic proxy to the SFMC REST API
