@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosProxyConfig } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import https from 'https';
 
 export interface SFMCConfig {
@@ -7,7 +7,18 @@ export interface SFMCConfig {
   authBaseUri: string;
   restBaseUri: string;
   accountId?: string;
-  proxy?: string | null;
+  proxy: string | null;
+}
+
+interface TokenResponse {
+  access_token: string;
+  expires_in: number;
+}
+
+interface ProxyConfig {
+  host: string;
+  port: number;
+  protocol: string;
 }
 
 export class SFMCAPIService {
@@ -39,7 +50,7 @@ export class SFMCAPIService {
   /**
    * Convert proxy string to Axios proxy config
    */
-  private createProxyConfig(proxyUrl: string | null | undefined): false | AxiosProxyConfig | undefined {
+  private createProxyConfig(proxyUrl: string | null): ProxyConfig | undefined {
     if (!proxyUrl) return undefined;
     
     try {
@@ -58,7 +69,7 @@ export class SFMCAPIService {
   /**
    * Get an access token for SFMC API
    */
-  private async getAccessToken(): Promise<string> {
+  async getAccessToken(): Promise<string> {
     // Return existing token if it's still valid
     if (this.accessToken && this.tokenExpiration && this.tokenExpiration > new Date()) {
       return this.accessToken;
@@ -71,13 +82,13 @@ export class SFMCAPIService {
         client_id: this.config.clientId,
         client_secret: this.config.clientSecret,
       };
-      
+
       // Add account_id only if it's provided in config
       if (this.config.accountId) {
         requestBody.account_id = this.config.accountId;
       }
 
-      const response = await axios.post(
+      const response: AxiosResponse<TokenResponse> = await axios.post(
         `${this.config.authBaseUri}/v2/token`,
         requestBody,
         {
@@ -94,11 +105,11 @@ export class SFMCAPIService {
       // Set expiration time (usually 20 minutes, subtracting 60 seconds for safety)
       const expiresInSeconds = response.data.expires_in || 1140; // Default to 19 minutes
       this.tokenExpiration = new Date(Date.now() + (expiresInSeconds - 60) * 1000);
-      
+
       if (!this.accessToken) {
         throw new Error('No access token received from SFMC');
       }
-      
+
       return this.accessToken;
     } catch (error: any) {
       console.error('Error obtaining SFMC access token:', error);
@@ -132,16 +143,16 @@ export class SFMCAPIService {
   /**
    * Make a request to the SFMC REST API
    */
-  public async makeRequest(
-    method: string,
+  async makeRequest(
+    method: string, 
     endpoint: string, 
-    data?: any,
+    data?: any, 
     parameters?: Record<string, string | number | boolean>
   ): Promise<any> {
     try {
       const accessToken = await this.getAccessToken();
-      
       const url = `${this.config.restBaseUri}${endpoint}`;
+      
       const config: AxiosRequestConfig = {
         method: method.toLowerCase(),
         url,
@@ -173,28 +184,33 @@ export class SFMCAPIService {
   /**
    * Get SFMC data from a REST endpoint (GET request)
    */
-  public async getData(endpoint: string, parameters?: Record<string, string | number | boolean>): Promise<any> {
+  async getData(endpoint: string, parameters?: Record<string, string | number | boolean>): Promise<any> {
     return this.makeRequest('get', endpoint, undefined, parameters);
   }
 
   /**
    * Create SFMC data (POST request)
    */
-  public async createData(endpoint: string, data: any, parameters?: Record<string, string | number | boolean>): Promise<any> {
+  async createData(endpoint: string, data: any, parameters?: Record<string, string | number | boolean>): Promise<any> {
     return this.makeRequest('post', endpoint, data, parameters);
   }
 
   /**
    * Update SFMC data (PUT/PATCH request)
    */
-  public async updateData(endpoint: string, data: any, parameters?: Record<string, string | number | boolean>, method: 'put' | 'patch' = 'put'): Promise<any> {
+  async updateData(
+    endpoint: string, 
+    data: any, 
+    parameters?: Record<string, string | number | boolean>, 
+    method: 'put' | 'patch' = 'put'
+  ): Promise<any> {
     return this.makeRequest(method, endpoint, data, parameters);
   }
 
   /**
    * Delete SFMC data (DELETE request)
    */
-  public async deleteData(endpoint: string, parameters?: Record<string, string | number | boolean>): Promise<any> {
+  async deleteData(endpoint: string, parameters?: Record<string, string | number | boolean>): Promise<any> {
     return this.makeRequest('delete', endpoint, undefined, parameters);
   }
 }
