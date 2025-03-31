@@ -32,12 +32,17 @@ export class SFMCAPIService {
   constructor(config: SFMCConfig) {
     this.config = config;
     
-    // Create an HTTPS agent that uses the system's certificate store
+    // Create an HTTPS agent that explicitly loads the custom certificate
     this.httpsAgent = new https.Agent({
       rejectUnauthorized: true, // Enforce SSL verification
-    // Load custom certificate
-    ca: process.env.NODE_EXTRA_CA_CERTS ? [require('fs').readFileSync(process.env.NODE_EXTRA_CA_CERTS)] : undefined
-  });
+      // Load custom certificate using imported fs module
+      ca: process.env.NODE_EXTRA_CA_CERTS ? [fs.readFileSync(process.env.NODE_EXTRA_CA_CERTS.replace('~', process.env.HOME || ''))] : undefined
+    });
+
+    // Log certificate path if available
+    if (process.env.NODE_EXTRA_CA_CERTS) {
+      console.error(`Using custom certificate: ${process.env.NODE_EXTRA_CA_CERTS}`);
+    }
 
     this.axiosInstance = axios.create({
       headers: {
@@ -89,6 +94,9 @@ export class SFMCAPIService {
         requestBody.account_id = this.config.accountId;
       }
 
+      // Log that we're using the custom HTTPS agent
+      console.error('Using custom HTTPS agent for authentication with certificate');
+      
       const response: AxiosResponse<TokenResponse> = await axios.post(
         `${this.config.authBaseUri}/v2/token`,
         requestBody,
@@ -96,6 +104,7 @@ export class SFMCAPIService {
           headers: {
             'Content-Type': 'application/json',
           },
+          // Use the same custom HTTPS agent that has the certificate loaded
           httpsAgent: this.httpsAgent,
           proxy: this.createProxyConfig(this.config.proxy),
         }
