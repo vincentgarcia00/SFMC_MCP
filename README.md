@@ -53,7 +53,8 @@ You'll need to configure the tool with your SFMC credentials. The tool expects t
 - `SFMC_REST_BASE_URI`: The REST API base URI (e.g., `https://rest.example.salesforce.com`)
 - `SFMC_ACCOUNT_ID`: (Optional) Your SFMC account ID
 
-### Corporate Network Certificate Configuration
+
+## Corporate Network Certificate Configuration
 
 If you're working in a corporate environment with SSL inspection, ensure that your company's root certificate is added to Node.js's trusted certificates store. In most enterprise environments, this is handled through your IT department's system configuration.
 
