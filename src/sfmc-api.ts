@@ -1,6 +1,4 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import https from 'https';
-import fs from 'fs';
 
 export interface SFMCConfig {
   clientId: string;
@@ -27,30 +25,23 @@ export class SFMCAPIService {
   private axiosInstance: AxiosInstance;
   private accessToken: string | null = null;
   private tokenExpiration: Date | null = null;
-  private httpsAgent: https.Agent;
 
   constructor(config: SFMCConfig) {
     this.config = config;
     
-    // Create an HTTPS agent that explicitly loads the custom certificate
-    this.httpsAgent = new https.Agent({
-      rejectUnauthorized: true, // Enforce SSL verification
-      // Load custom certificate using imported fs module
-      ca: process.env.NODE_EXTRA_CA_CERTS ? [fs.readFileSync(process.env.NODE_EXTRA_CA_CERTS.replace('~', process.env.HOME || ''))] : undefined
-    });
-
-    // Log certificate path if available
-    if (process.env.NODE_EXTRA_CA_CERTS) {
-      console.error(`Using custom certificate: ${process.env.NODE_EXTRA_CA_CERTS}`);
-    }
-
+    // Create axios instance without custom certificate handling
+    // Node.js will automatically use certificates from NODE_EXTRA_CA_CERTS
     this.axiosInstance = axios.create({
       headers: {
         'Content-Type': 'application/json',
       },
-      httpsAgent: this.httpsAgent,
       proxy: this.createProxyConfig(this.config.proxy),
     });
+    
+    // Log if proxy is being used
+    if (config.proxy) {
+      console.error(`Using proxy for SFMC API requests: ${config.proxy}`);
+    }
   }
 
   /**
@@ -94,9 +85,6 @@ export class SFMCAPIService {
         requestBody.account_id = this.config.accountId;
       }
 
-      // Log that we're using the custom HTTPS agent
-      console.error('Using custom HTTPS agent for authentication with certificate');
-      
       const response: AxiosResponse<TokenResponse> = await axios.post(
         `${this.config.authBaseUri}/v2/token`,
         requestBody,
@@ -104,8 +92,6 @@ export class SFMCAPIService {
           headers: {
             'Content-Type': 'application/json',
           },
-          // Use the same custom HTTPS agent that has the certificate loaded
-          httpsAgent: this.httpsAgent,
           proxy: this.createProxyConfig(this.config.proxy),
         }
       );
@@ -170,7 +156,6 @@ export class SFMCAPIService {
           Authorization: `Bearer ${accessToken}`,
         },
         params: parameters,
-        httpsAgent: this.httpsAgent,
         proxy: this.createProxyConfig(this.config.proxy),
       };
 
