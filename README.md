@@ -1,6 +1,20 @@
 # SFMC MCP Tool
 
-A Model Context Protocol (MCP) tool for connecting Claude or any MCP compatible app to Salesforce Marketing Cloud (SFMC) REST API. This tool enables Claude to interact with SFMC data and operations directly through the `sfmc_rest_request` tool function.
+A Model Context Protocol (MCP) tool for connecting Claude or any MCP compatible app to Salesforce Marketing Cloud (SFMC) REST API. This tool enables Claude desktop or any equivalent app to interact with SFMC directly through the `sfmc_rest_request` tool function.
+
+## Note frmo the author
+**Prompt responsibly.**
+
+This MCP (Model Context Protocol) tool for Salesforce Marketing Cloud is powerful — and **potentially dangerous**.
+Misunderstood prompts or improper usage can result in serious damage to your SFMC Business Unit.
+
+To avoid unintended consequences, always test in a sandbox Business Unit before attempting anything in production.
+**Treat this tool like a loaded weapon**: very effective in the right hands, but unforgiving in the wrong context.
+
+Disclaimer: The author cannot be held responsible for any damage, data loss, or unintended consequences resulting from the use or misuse of this tool. You are fully responsible for how you apply it.
+
+Use with care.
+**You've been warned.**
 
 ## Features
 
@@ -67,7 +81,9 @@ To use this tool with Claude Desktop, you need to add it to your Claude Desktop 
 
 ## Usage Examples
 
-Once configured, you can use the SFMC tool in Claude Desktop to interact with your SFMC instance. Here are some example queries:
+Once configured, you can use the SFMC tool in Claude Desktop to interact with your SFMC instance. 
+Obviously, the scope of work of this MCP tool will be limited to the SFMC installed package access level you will set for this MCP.
+Here are some prompt examples:
 
 ### Query a Data Extension
 
@@ -144,6 +160,7 @@ If you're having trouble authenticating:
 2. Ensure you have API access enabled for your SFMC user
 3. Check if your IP is whitelisted in SFMC if IP restrictions are enabled
 4. Verify the authentication URLs are correct
+
 
 ## License
 
