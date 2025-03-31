@@ -23,7 +23,6 @@ Use with care.
 - Generic REST API access to Salesforce Marketing Cloud
 - Automatic OAuth token management
 - Support for all HTTP methods (GET, POST, PUT, PATCH, DELETE)
-- Corporate proxy support
 - TLS certificate verification
 
 ## Installation
