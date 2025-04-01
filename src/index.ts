@@ -3,14 +3,6 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { SFMCAPIService } from "./sfmc-api.js";
 
-// Set NODE_TLS_REJECT_UNAUTHORIZED only in development if needed
-// If you're in a corporate environment with special certificates, you may need this
-// but it's better to configure the certificates properly in production
-if (process.env.NODE_ENV === 'development' && process.env.ALLOW_INSECURE_TLS === 'true') {
-    console.warn('WARNING: TLS certificate verification is disabled. This is insecure and should not be used in production.');
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-}
-
 // Initialize the MCP server
 const server = new McpServer({
     name: "MCP_SFMC",
@@ -28,11 +20,7 @@ const sfmcConfig = {
     restBaseUri: process.env.SFMC_REST_BASE_URI || "",
     accountId: process.env.SFMC_ACCOUNT_ID,
     // Add proxy settings if needed
-    proxy: process.env.HTTP_PROXY || process.env.HTTPS_PROXY || undefined,
-    // Add SSL verification option - if needed in development
-    rejectUnauthorized: process.env.NODE_ENV === 'development' && process.env.ALLOW_INSECURE_TLS === 'true' 
-        ? false 
-        : undefined
+    proxy: process.env.HTTP_PROXY || process.env.HTTPS_PROXY || undefined
 };
 
 // Initialize SFMC client
@@ -61,6 +49,7 @@ server.tool("sfmc_rest_request", "Make a request to any SFMC REST API endpoint",
     try {
         // Make the API request using the pre-configured SFMC client
         const result = await sfmcClient.makeRequest(method, endpoint, data, parameters);
+        
         return {
             content: [
                 {
@@ -72,6 +61,53 @@ server.tool("sfmc_rest_request", "Make a request to any SFMC REST API endpoint",
     }
     catch (error: any) {
         console.error(`ERROR executing ${method} ${endpoint}:`, error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `Error: ${error.message}`,
+                },
+            ],
+            isError: true,
+        };
+    }
+});
+
+// Add a specific tool for Data Extensions to simplify common operations
+server.tool("sfmc_get_data_extension", "Get rows from a SFMC Data Extension by key", {
+    key: z.string().describe("External key of the Data Extension"),
+    filter: z.string().optional().describe("Optional filter expression"),
+    fields: z.array(z.string()).optional().describe("Fields to return (leave empty for all fields)"),
+    orderBy: z.string().optional().describe("Field to order by"),
+    page: z.number().optional().describe("Page number for pagination"),
+    pageSize: z.number().optional().describe("Page size for pagination (default: 50)"),
+}, async ({ key, filter, fields, orderBy, page, pageSize }) => {
+    try {
+        // Construct the endpoint
+        const endpoint = `/data/v1/customobjectdata/key/${key}/rowset`;
+        
+        // Construct parameters
+        const parameters: Record<string, string | number | boolean> = {};
+        if (filter) parameters.$filter = filter;
+        if (fields && fields.length > 0) parameters.$fields = fields.join(',');
+        if (orderBy) parameters.$orderBy = orderBy;
+        if (page) parameters.$page = page;
+        if (pageSize) parameters.$pageSize = pageSize;
+        
+        // Make the request
+        const result = await sfmcClient.getData(endpoint, parameters);
+        
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: JSON.stringify(result, null, 2),
+                },
+            ],
+        };
+    }
+    catch (error: any) {
+        console.error(`ERROR getting data from Data Extension ${key}:`, error);
         return {
             content: [
                 {
