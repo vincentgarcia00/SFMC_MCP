@@ -23,19 +23,17 @@ export class SFMCAPIService {
     constructor(config: SFMCConfig) {
         this.config = config;
 
-        // Create HTTPS agent with certificate handling options
-        const httpsAgent = new https.Agent({
-            // Use NODE_EXTRA_CA_CERTS by default, but allow explicit override options
-            rejectUnauthorized: config.rejectUnauthorized !== false,
-        });
-
-        // Create axios instance with the configured HTTPS agent
+        // Create axios instance with simpler configuration
         this.axiosInstance = axios.create({
             headers: {
                 'Content-Type': 'application/json',
             },
+            // Use a simpler HTTPS agent configuration
+            httpsAgent: new https.Agent({
+                // For production systems, always enable proper certificate validation
+                rejectUnauthorized: true
+            }),
             proxy: this.createProxyConfig(this.config.proxy),
-            httpsAgent: httpsAgent,
         });
 
         // Log if proxy is being used
@@ -73,7 +71,7 @@ export class SFMCAPIService {
             return this.accessToken;
         }
         try {
-            // Ensure JSON structure matches exactly what SFMC expects
+            // Use the same structure as the working Node.js example
             const requestBody: Record<string, string> = {
                 grant_type: 'client_credentials',
                 client_id: this.config.clientId,
@@ -85,52 +83,49 @@ export class SFMCAPIService {
                 requestBody.account_id = this.config.accountId;
             }
             
-            // Use the class's axiosInstance with predefined config instead of the global axios
+            // Use the class's axiosInstance with predefined config
             const response = await this.axiosInstance.post(
                 `${this.config.authBaseUri}/v2/token`, 
                 requestBody,
                 {
-                    // Add retry mechanism for authentication
-                    maxRedirects: 5,
-                    timeout: 10000, // Increase timeout for auth requests
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 }
             );
             
             this.accessToken = response.data.access_token;
+            
             // Set expiration time (usually 20 minutes, subtracting 60 seconds for safety)
             const expiresInSeconds = response.data.expires_in || 1140; // Default to 19 minutes
             this.tokenExpiration = new Date(Date.now() + (expiresInSeconds - 60) * 1000);
+            
             if (!this.accessToken) {
                 throw new Error('No access token received from SFMC');
             }
             return this.accessToken;
         }
         catch (error: any) {
-            console.error('Error obtaining SFMC access token:', error);
-            // Log more detailed error information for debugging
+            // Log error information for debugging
             if (error.response) {
-                console.error('Response status:', error.response.status);
-                console.error('Response headers:', error.response.headers);
-                console.error('Response data:', error.response.data);
+                console.error(`SFMC Auth Error - Status: ${error.response.status}`);
+                console.error('Response:', JSON.stringify(error.response.data, null, 2));
             }
             else if (error.request) {
-                console.error('Request made but no response received');
-                console.error('Request details:', error.request);
+                console.error('No response received from SFMC (possible network issue)');
             }
             else {
                 console.error('Error details:', error.message);
             }
+            
             // Throw the original error message instead of a generic one
             if (error.response && error.response.data) {
-                // If it's an axios error with response data
                 throw new Error(`SFMC Authentication Error: ${JSON.stringify(error.response.data)}`);
             }
             else if (error.message) {
-                // If it has a message property
                 throw new Error(`SFMC Authentication Error: ${error.message}`);
             }
             else {
-                // Fallback to stringifying the entire error object
                 throw new Error(`SFMC Authentication Error: ${JSON.stringify(error)}`);
             }
         }
@@ -147,28 +142,42 @@ export class SFMCAPIService {
     ): Promise<T> {
         try {
             const accessToken = await this.getAccessToken();
-            const url = `${this.config.restBaseUri}${endpoint}`;
+            
+            // Make sure the endpoint has the correct format
+            const url = endpoint.startsWith('http') ? 
+                endpoint : 
+                `${this.config.restBaseUri}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+            
             const config: AxiosRequestConfig = {
                 method: method.toLowerCase(),
                 url,
                 headers: {
-                    Authorization: `Bearer ${accessToken}`,
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
                 },
-                params: parameters,
-                timeout: 30000, // 30 second timeout for API requests
+                params: parameters
             };
+            
             if (data && (method.toLowerCase() === 'post' || method.toLowerCase() === 'put' || method.toLowerCase() === 'patch')) {
                 config.data = data;
             }
+            
             const response = await this.axiosInstance.request<T>(config);
             return response.data;
         }
         catch (error: any) {
-            console.error(`Error making SFMC API request to ${endpoint}:`, error.response?.data || error);
+            console.error(`Error making SFMC API request to ${endpoint}:`);
             if (error.response) {
+                console.error(`Status: ${error.response.status}`);
+                console.error('Response:', JSON.stringify(error.response.data, null, 2));
                 throw new Error(`SFMC API error (${error.response.status}): ${JSON.stringify(error.response.data)}`);
             }
+            else if (error.request) {
+                console.error('No response received (possible network issue)');
+                throw new Error(`SFMC API request failed: No response received`);
+            }
             else {
+                console.error('Error:', error.message);
                 throw new Error(`SFMC API request failed: ${error.message}`);
             }
         }
