@@ -184,6 +184,66 @@ export class SFMCAPIService {
     }
 
     /**
+     * Make a SOAP request to the SFMC SOAP API endpoint
+     * @param soapAction The SOAPAction header value (e.g., "Retrieve")
+     * @param soapBody The full SOAP XML body as a string
+     * @returns The SOAP response XML as a string
+     */
+    async makeSoapRequest(soapAction: string, soapBody: string): Promise<string> {
+        // The SFMC SOAP endpoint is typically: https://YOUR_SUBDOMAIN.soap.marketingcloudapis.com/Service.asmx
+        // We'll derive it from restBaseUri by replacing 'rest' with 'soap'
+        const soapBaseUri = this.config.restBaseUri.replace('rest', 'soap');
+        const soapEndpoint = `${soapBaseUri}/Service.asmx`;
+        const accessToken = await this.getAccessToken();
+
+        let soapBodyWithToken: string;
+        // Match any SOAP header tag, regardless of prefix (e.g., <soapenv:Header>, <SOAP-ENV:Header>, <soap:Header>, etc.)
+        const headerRegex = /(<[a-zA-Z0-9\-_:]+Header[^>]*>)(\s*)/i;
+        const envelopeRegex = /(<[a-zA-Z0-9\-_:]+Envelope[^>]*>)/i;
+        if (headerRegex.test(soapBody)) {
+            // Insert <fueloauth> immediately after the opening Header tag
+            soapBodyWithToken = soapBody.replace(
+                headerRegex,
+                `$1<fueloauth>${accessToken}</fueloauth>$2`
+            );
+        } else {
+            // Insert a new header with <fueloauth> as the first child of Envelope
+            soapBodyWithToken = soapBody.replace(
+                envelopeRegex,
+                `$1<soapenv:Header><fueloauth>${accessToken}</fueloauth></soapenv:Header>`
+            );
+        }
+
+        try {
+            const response = await this.axiosInstance.post(
+                soapEndpoint,
+                soapBodyWithToken,
+                {
+                    headers: {
+                        'Content-Type': 'text/xml',
+                        'SOAPAction': soapAction
+                        // Do NOT include Authorization header for legacy SOAP
+                    }
+                }
+            );
+            return response.data;
+        } catch (error: any) {
+            let statusMessage = '';
+            if (error.response && typeof error.response.data === 'string') {
+                // Try to extract <StatusMessage>...</StatusMessage> from the response XML
+                const match = error.response.data.match(/<StatusMessage>([\s\S]*?)<\/StatusMessage>/i);
+                if (match && match[1]) {
+                    statusMessage = `\nStatusMessage: ${match[1].trim()}`;
+                }
+            }
+            if (error.response) {
+                throw new Error(`SOAP Error: ${error.response.status} ${error.response.statusText} - ${error.response.data}${statusMessage}`);
+            }
+            throw error;
+        }
+    }
+
+    /**
      * Get SFMC data from a REST endpoint (GET request)
      */
     async getData<T = any>(endpoint: string, parameters?: Record<string, string | number | boolean>): Promise<T> {
@@ -216,3 +276,4 @@ export class SFMCAPIService {
         return this.makeRequest<T>('delete', endpoint, undefined, parameters);
     }
 }
+

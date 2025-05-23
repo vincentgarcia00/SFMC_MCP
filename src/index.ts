@@ -73,6 +73,35 @@ server.tool("sfmc_rest_request", "Make a request to any SFMC REST API endpoint",
     }
 });
 
+// Register a tool for making SOAP API requests to SFMC
+server.tool("sfmc_soap_request", "Make a request to the SFMC SOAP API endpoint (Service.asmx)", {
+    soapAction: z.string().describe("SOAPAction header value, e.g. 'Retrieve' or 'Create'"),
+    soapBody: z.string().describe("Full SOAP XML body as a string"),
+}, async ({ soapAction, soapBody }) => {
+    try {
+        const result = await sfmcClient.makeSoapRequest(soapAction, soapBody);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: result,
+                },
+            ],
+        };
+    } catch (error: any) {
+        console.error(`ERROR executing SOAP request:`, error);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `Error: ${error.message}`,
+                },
+            ],
+            isError: true,
+        };
+    }
+});
+
 // Add a specific tool for Data Extensions to simplify common operations
 server.tool("sfmc_get_data_extension", "Get rows from a SFMC Data Extension by key", {
     key: z.string().describe("External key of the Data Extension"),
@@ -140,3 +169,4 @@ async function main() {
 }
 
 main();
+
